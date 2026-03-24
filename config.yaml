@@ -1,4 +1,17 @@
 monitoring:
-  directories:
+  directories: # testing
     - ./tmp/tmp1
     - ./tmp/tmp2
+  integrity: # hashed - alert on any change
+    - /etc/passwd
+    - /etc/shadow
+    - /etc/sudoers
+    - /etc/ssh/
+    - /bin/
+    - /usr/bin/
+  activity: # events logged but not hashed
+    - /tmp/
+    - /home/
+    - /var/log/
+data:
+  baseline_path: ./data/baseline.json

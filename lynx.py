@@ -1,61 +1,57 @@
-import os
+import sys
 
-import yaml
-from inotify_simple import INotify, flags
-
-# Load configuration from config.yaml
-with open("config.yaml", "r") as f:
-    config = yaml.safe_load(f)
-
-# Get the list of directories to monitor from the config
-MONITORING_DIRS = config["monitoring"]["directories"]
+from monitors.file_integrity import (
+    build_baseline,
+    cleanup,
+    compare_baseline,
+    handle_events,
+    save_baseline,
+    start_monitoring,
+)
 
 
 def main():
-    print(r"""
+    header = r"""
         __
        ╱╲ ╲
        ╲ ╲ ╲      __  __    ___    __  _
         ╲ ╲ ╲  __╱╲ ╲╱╲ ╲ ╱' _ `╲ ╱╲ ╲╱'╲
-         ╲ ╲ ╲L╲ ╲ ╲ ╲_╲ ╲╱╲ ╲╱╲ ╲╲╱>  <╱
+         ╲ ╲ ╲_╲ ╲ ╲ ╲_╲ ╲╱╲ ╲╱╲ ╲╲╱>  <╱
           ╲ ╲____╱╲╱`____ ╲ ╲_╲ ╲_╲╱╲_╱╲_╲
-           ╲╱___╱  `╱___╱> ╲╱_╱╲╱_╱╲╱╱╲╱_╱
+           ╲╱___╱  `╱___╱  ╲╱_╱╲╱_╱╲╱╱╲╱_╱
                       ╱╲___╱
                       ╲╱__╱
-        """)
+        """
+
+    if len(sys.argv) == 2 and (sys.argv[1] == "--baseline" or sys.argv[1] == "-b"):
+        print("Building baseline...")
+        baseline = build_baseline()
+        save_baseline(baseline)
+        print("Baseline saved.")
+        print("Exiting...")
+        sys.exit(0)
+    elif len(sys.argv) > 1:
+        print(
+            "Invalid argument. Use --baseline or -b to build a baseline or no arguments to start monitoring."
+        )
+        sys.exit(1)
+
+    print(header)
+
+    print("Comparing baseline...")
+    baseline = compare_baseline()
+    print("Baseline comparison complete.")
 
     print("Initiating monitoring...")
-    inotify = INotify()
-    # Define watch flags (CREATE, DELETE, MODIFY, DELETE_SELF)
-    watch_flags = flags.CREATE | flags.DELETE | flags.MODIFY | flags.DELETE_SELF
-    wd_to_path = {}
-    # Initialize inotify watches for each directory
-    for dir in MONITORING_DIRS:
-        # Walk through the directory and add watches for each subdirectory
-        for root, dirs, files in os.walk(dir, topdown=True):
-            wd = inotify.add_watch(root, watch_flags)
-            wd_to_path[wd] = root
+    inotify, wd_to_path, watch_flags = start_monitoring()
 
     while True:
         try:
-            # Read events from inotify and process them
-            events = inotify.read()
-            for event in events:
-                # Print event details
-                flag_names = [f.name for f in flags.from_mask(event.mask)]
-                print(
-                    f"  - {', '.join(flag_names)} on '{event.name}' | full path: {wd_to_path[event.wd]}/{event.name}"
-                )
-
-                # Watch new directories automatically
-                if "CREATE" in flag_names and event.mask & flags.ISDIR:
-                    path = os.path.join(wd_to_path[event.wd], event.name)
-                    wd = inotify.add_watch(path, watch_flags)
-                    wd_to_path[wd] = path
-                    print(f"Watching new directory: '{path}'")
-
+            handle_events(inotify, wd_to_path, watch_flags, baseline)
         except KeyboardInterrupt:
+            # Clean up inotify watches on exit
             print("\nExiting...")
+            cleanup(inotify, wd_to_path)
             break
 
 
