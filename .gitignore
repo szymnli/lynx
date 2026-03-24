@@ -1,15 +1,25 @@
-# Environments
-.env
-.envrc
-.venv
-env/
+# Logs
+logs/
+
+# Generated baseline data (machine-specific)
+data/baseline.json
+
+# Virtual environment
 venv/
-ENV/
-env.bak/
-venv.bak/
 
-# Logging
-*.log
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
 
-# Custom
-notes.md
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Environment variables / secrets
+.env
+*.key
+
+# OS files
+.DS_Store
