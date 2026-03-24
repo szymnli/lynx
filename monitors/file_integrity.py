@@ -7,27 +7,34 @@ from inotify_simple import INotify, flags
 from core.config import BASELINE_PATH, INTEGRITY_DIRS, MONITORING_DIRS
 
 
-def build_baseline(directories=INTEGRITY_DIRS):
+def build_baseline(logger, directories=INTEGRITY_DIRS):
+    """Build a baseline of file hashes for the given directories."""
     baseline = {}
     for directory in directories:
+        # Walk through the directory and build a baseline of file hashes
         for root, subdirs, files in os.walk(directory, topdown=True):
             for file in files:
                 file_path = os.path.join(root, file)
                 try:
+                    # Compute the hash of the file and add it to the baseline
                     with open(file_path, "rb") as f:
                         baseline[file_path] = hashlib.sha256(f.read()).hexdigest()
                 except (PermissionError, OSError) as e:
                     print(f"[SKIP] Cannot read {file_path}: {e}")
                     continue
+    # Save the baseline to disk
+    logger.log_baseline_checkpoint(BASELINE_PATH)
     return baseline
 
 
 def save_baseline(baseline, path=BASELINE_PATH):
+    """Save the baseline of file hashes to disk."""
     with open(path, "w") as f:
         json.dump(baseline, f, indent=2)
 
 
 def compare_baseline():
+    """Compare the current file hashes against the baseline and print any modifications."""
     with open(BASELINE_PATH, "r") as f:
         baseline = json.load(f)
     for file_path, current_hash in baseline.items():
@@ -42,6 +49,8 @@ def compare_baseline():
 
 
 def start_monitoring():
+    """Start monitoring directories for file integrity using inotify."""
+    # Initialize inotify and set up watches for monitoring directories
     inotify = INotify()
     # Define watch flags (CREATE, DELETE, MODIFY, DELETE_SELF)
     watch_flags = flags.CREATE | flags.DELETE | flags.MODIFY | flags.DELETE_SELF
@@ -55,35 +64,50 @@ def start_monitoring():
     return inotify, wd_to_path, watch_flags
 
 
-def handle_events(inotify, wd_to_path, watch_flags, baseline):
+def handle_events(logger, inotify, wd_to_path, watch_flags, baseline):
+    """Handle events from inotify and compare them against the baseline."""
     # Read events from inotify and process them
     events = inotify.read()
     for event in events:
-        # Print event details
+        # Extract flag names from the event mask
         flag_names = [f.name for f in flags.from_mask(event.mask)]
-        print(
-            f"  - {', '.join(flag_names)} on '{event.name}' | full path: {wd_to_path[event.wd]}/{event.name}"
-        )
 
+        # Set default severity and path
+        severity = "LOW"
+        path = os.path.join(wd_to_path[event.wd], event.name)
+
+        # Check if the path is in the baseline and update severity if it is
+        if path in baseline:
+            severity = "HIGH"
+
+        # If a baseline hash exists for the path, check if it has been modified
         if "MODIFY" in flag_names:
-            full_path = os.path.join(wd_to_path[event.wd], event.name)
-            if full_path in baseline:
+            if path in baseline:
                 try:
-                    with open(full_path, "rb") as f:
+                    with open(path, "rb") as f:
                         current_hash = hashlib.sha256(f.read()).hexdigest()
-                    if current_hash != baseline[full_path]:
-                        print(f"[ALERT] {full_path} has been modified!")
+                    if current_hash != baseline[path]:
+                        print(f"[ALERT] {path} has been modified!")
+                        severity = "CRITICAL"
                 except (PermissionError, OSError):
                     pass
 
         # Watch new directories automatically
         if "CREATE" in flag_names and event.mask & flags.ISDIR:
-            path = os.path.join(wd_to_path[event.wd], event.name)
             wd = inotify.add_watch(path, watch_flags)
             wd_to_path[wd] = path
             print(f"[!] Watching new directory: '{path}'")
 
+        # Complete event details
+        type = ", ".join(flag_names)
+        details = f"{type} on '{event.name}' | full path: {path}"
+
+        # Log the event
+        logger.log(severity, type, path, details)
+        print(details)
+
 
 def cleanup(inotify, wd_to_path):
+    """Clean up inotify watches when the program exits."""
     for wd in wd_to_path:
         inotify.rm_watch(wd)

@@ -12,3 +12,6 @@ MONITORING_DIRS = config["monitoring"]["directories"]  # Testing
 
 # Get the path to the baseline data
 BASELINE_PATH = config["data"]["baseline_path"]
+
+# Get the path to the log file
+LOG_FILE = config["data"]["log_file"]

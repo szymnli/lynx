@@ -15,3 +15,4 @@ monitoring:
     - /var/log/
 data:
   baseline_path: ./data/baseline.json
+  log_file: logs/lynx.log
