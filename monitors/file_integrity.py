@@ -4,10 +4,10 @@ import os
 
 from inotify_simple import INotify, flags
 
-from core.config import BASELINE_PATH, INTEGRITY_DIRS, MONITORING_DIRS
+from core.config import ACTIVITY_DIRS, BASELINE_PATH, INTEGRITY_DIRS
 
 
-def build_baseline(logger, directories=INTEGRITY_DIRS):
+def build_baseline(directories=INTEGRITY_DIRS):
     """Build a baseline of file hashes for the given directories."""
     baseline = {}
     for directory in directories:
@@ -22,25 +22,25 @@ def build_baseline(logger, directories=INTEGRITY_DIRS):
                 except (PermissionError, OSError) as e:
                     print(f"[SKIP] Cannot read {file_path}: {e}")
                     continue
-    # Save the baseline to disk
-    logger.log_baseline_checkpoint(BASELINE_PATH)
     return baseline
 
 
-def save_baseline(baseline, path=BASELINE_PATH):
+def save_baseline(logger, baseline, path=BASELINE_PATH):
     """Save the baseline of file hashes to disk."""
     with open(path, "w") as f:
         json.dump(baseline, f, indent=2)
+    # Log the baseline checkpoint
+    logger.log_baseline_checkpoint(BASELINE_PATH)
 
 
 def compare_baseline():
-    """Compare the current file hashes against the baseline and print any modifications."""
+    """Compare the stored file hashes against the baseline and print any modifications."""
     with open(BASELINE_PATH, "r") as f:
         baseline = json.load(f)
-    for file_path, current_hash in baseline.items():
+    for file_path, stored_hash in baseline.items():
         try:
             with open(file_path, "rb") as f:
-                if hashlib.sha256(f.read()).hexdigest() != current_hash:
+                if hashlib.sha256(f.read()).hexdigest() != stored_hash:
                     print(f"[WARNING] File {file_path} has been modified.")
         except (PermissionError, OSError) as e:
             print(f"[SKIP] Cannot read {file_path}: {e}")
@@ -56,7 +56,7 @@ def start_monitoring():
     watch_flags = flags.CREATE | flags.DELETE | flags.MODIFY | flags.DELETE_SELF
     wd_to_path = {}
     # Initialize inotify watches for each directory
-    for dir in MONITORING_DIRS:
+    for dir in ACTIVITY_DIRS:
         # Walk through the directory and add watches for each subdirectory
         for root, dirs, files in os.walk(dir, topdown=True):
             wd = inotify.add_watch(root, watch_flags)

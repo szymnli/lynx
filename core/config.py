@@ -8,8 +8,6 @@ with open("config.yaml", "r") as f:
 INTEGRITY_DIRS = config["monitoring"]["integrity"]
 ACTIVITY_DIRS = config["monitoring"]["activity"]
 
-MONITORING_DIRS = config["monitoring"]["directories"]  # Testing
-
 # Get the path to the baseline data
 BASELINE_PATH = config["data"]["baseline_path"]
 

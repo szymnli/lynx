@@ -1,7 +1,4 @@
 monitoring:
-  directories: # testing
-    - ./tmp/tmp1
-    - ./tmp/tmp2
   integrity: # hashed - alert on any change
     - /etc/passwd
     - /etc/shadow
@@ -10,9 +7,7 @@ monitoring:
     - /bin/
     - /usr/bin/
   activity: # events logged but not hashed
-    - /tmp/
-    - /home/
-    - /var/log/
+    - tmp # just tmp for testing
 data:
   baseline_path: ./data/baseline.json
   log_file: logs/lynx.log

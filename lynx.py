@@ -35,8 +35,8 @@ def main():
         print("Building baseline...")
 
         # Build baseline and save it
-        baseline = build_baseline(logger)
-        save_baseline(baseline)
+        baseline = build_baseline()
+        save_baseline(logger, baseline)
 
         print("Baseline saved.")
         print("Exiting...")
