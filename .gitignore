@@ -26,3 +26,4 @@ build/
 
 # Temporary files
 notes.md
+tmp/
