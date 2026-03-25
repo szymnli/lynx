@@ -1,6 +1,3 @@
-from alerts.alert import Alert
-
-
 class Notifier:
     def __init__(self, logger):
         self.logger = logger
