@@ -74,7 +74,7 @@ def start_monitoring():
 def handle_events(notifier, inotify, wd_to_path, watch_flags, baseline):
     """Handle events from inotify and compare them against the baseline."""
     # Read events from inotify and process them
-    events = inotify.read()
+    events = inotify.read(timeout=5000)
     for event in events:
         flag_names = [f.name for f in flags.from_mask(event.mask)]
         path = os.path.join(wd_to_path[event.wd], event.name)
