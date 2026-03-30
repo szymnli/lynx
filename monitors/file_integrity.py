@@ -85,6 +85,9 @@ def handle_events(notifier, inotify, wd_to_path, watch_flags, baseline):
         # Check if the path is in the baseline and update severity if it is
         if path in baseline:
             severity = "HIGH"
+        if "sudoers" in path:
+            event_type = "SUDOERS_MODIFIED"
+            severity = "CRITICAL"
 
         # If a baseline hash exists for the path, check if it has been modified
         if "MODIFY" in flag_names and path in baseline:

@@ -8,12 +8,15 @@ def get_process_snapshot() -> dict:
     """Take a snapshot of the current processes."""
     snapshot = {}
     for pid in os.listdir("/proc"):
+        # Skip non-digit entries (e.g., "sys", "kthreadd", etc.)
         if not pid.isdigit():
             continue
         try:
+            # Read the process status file to get process details
             with open(f"/proc/{pid}/status") as f:
                 status = f.read()
 
+            # Parse the status file to extract process information
             name, uid, ppid = None, None, None
             for line in status.split("\n"):
                 if line.startswith("Name:"):
@@ -23,6 +26,7 @@ def get_process_snapshot() -> dict:
                 elif line.startswith("PPid:"):
                     ppid = int(line.split()[1])
 
+            # Read the process command line to get the executable path
             with open(f"/proc/{pid}/cmdline") as f:
                 cmdline = f.read().strip("\x00").split("\x00")
 

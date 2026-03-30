@@ -21,3 +21,12 @@ $ pip install -r requirements.txt
 $ python lynx.py -b
 $ python lynx.py
 ```
+
+### Processes
+| Event | Severity |
+|---|---|
+| File event on non-baseline path | LOW |
+| File event on baseline pathHIGHFile content changed vs baseline hash | CRITICAL |
+| New process, non-rootLOWNew process, UID 0 | HIGH |
+| Process running deleted binary | CRITICAL |
+| New SUID binary appeared | CRITICAL |

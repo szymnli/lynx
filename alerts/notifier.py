@@ -11,10 +11,8 @@ class Notifier:
         if alert.severity == "CRITICAL":
             self._desktop_notify(alert)  # desktop for CRITICAL only
 
-        # LOW and MEDIUM are silently logged — this is intentional
-
     def _desktop_notify(self, alert):
-        # TODO: implement with notify2 or plyer in week 4
+        # TODO: implement with notify2 or plyer
         # title = f"Lynx Alert: {alert.event_type}"
         # body = alert.summary()
         pass

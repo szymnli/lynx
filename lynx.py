@@ -73,6 +73,7 @@ def main():
     print("Taking process snapshot...")
     old_snapshot = get_process_snapshot()
     suid_baseline = build_suid_baseline(INTEGRITY_DIRS)
+    print("Process snapshot taken...")
 
     while True:
         try:
