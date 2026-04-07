@@ -9,6 +9,9 @@ monitoring:
   activity: # events logged but not hashed
     - tmp # just tmp for testing
     - /etc/
+  user:
+    failure_threshold: 3
+    failure_window_seconds: 60
 data:
   baseline_path: ./data/baseline.json
   log_file: logs/lynx.log

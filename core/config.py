@@ -13,3 +13,7 @@ BASELINE_PATH = config["data"]["baseline_path"]
 
 # Get the path to the log file
 LOG_FILE = config["data"]["log_file"]
+
+# Get user monitoring settings
+FAILURE_THRESHOLD = config["user"]["failure_threshold"]
+FAILURE_WINDOW_SECONDS = config["user"]["failure_window_seconds"]
