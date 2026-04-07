@@ -2,12 +2,6 @@ import os
 import sys
 from collections import defaultdict
 
-from monitors.user_monitor import (
-    check_sudo_failures,
-    read_new_lines,
-    start_journal_stream,
-)
-
 from alerts.notifier import Notifier
 from core.config import BASELINE_PATH, INTEGRITY_DIRS
 from core.logger import Logger
@@ -25,6 +19,11 @@ from monitors.processes import (
     check_new_processes,
     check_suid_binaries,
     get_process_snapshot,
+)
+from monitors.user import (
+    check_sudo_failures,
+    read_new_lines,
+    start_journal_stream,
 )
 
 

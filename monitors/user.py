@@ -33,7 +33,7 @@ def read_new_lines(stream) -> list:
 def parse_sudo_failure(line) -> str | None:
     if "authentication failure" not in line:
         return None
-    m = re.search(r"user=(\w+)$", line)
+    m = re.search(r"user=(\w+)\s*$", line)
     return m.group(1) if m else None
 
 
