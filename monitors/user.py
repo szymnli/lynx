@@ -2,7 +2,6 @@ import fcntl
 import os
 import re
 import subprocess
-from collections import defaultdict
 from datetime import datetime, timedelta
 
 from alerts.alert import Alert
