@@ -34,13 +34,4 @@ sudo venv/bin/python lynx.py -b
 sudo venv/bin/python lynx.py
 ```
 
-
-### Processes
-| Event | Severity |
-|---|---|
-| File event on non-baseline path | LOW |
-| File event on baseline pathHIGHFile content changed vs baseline hash | CRITICAL |
-| New process, non-rootLOWNew process, UID 0 | HIGH |
-| Process running deleted binary | CRITICAL |
-| New SUID binary appeared | CRITICAL |
->>>>>>> f045a3a6a8bcb9e1e6801551eb60ed95c658ad38
+Needs root to read other users' `/proc` entries and stream from journald.
