@@ -11,18 +11,22 @@ from core.config import ACTIVITY_DIRS, BASELINE_PATH, INTEGRITY_DIRS
 def build_baseline(directories=INTEGRITY_DIRS):
     """Build a baseline of file hashes for the given directories."""
     baseline = {}
-    for directory in directories:
-        # Walk through the directory and build a baseline of file hashes
-        for root, subdirs, files in os.walk(directory, topdown=True):
-            for file in files:
-                file_path = os.path.join(root, file)
-                try:
-                    # Compute the hash of the file and add it to the baseline
-                    with open(file_path, "rb") as f:
-                        baseline[file_path] = hashlib.sha256(f.read()).hexdigest()
-                except (PermissionError, OSError) as e:
-                    print(f"[SKIP] Cannot read {file_path}: {e}")
-                    continue
+    for entry in directories:
+        if os.path.isfile(entry):
+            try:
+                with open(entry, "rb") as f:
+                    baseline[entry] = hashlib.sha256(f.read()).hexdigest()
+            except (PermissionError, OSError) as e:
+                print(f"[SKIP] Cannot read {entry}: {e}")
+        elif os.path.isdir(entry):
+            for root, subdirs, files in os.walk(entry, topdown=True):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    try:
+                        with open(file_path, "rb") as f:
+                            baseline[file_path] = hashlib.sha256(f.read()).hexdigest()
+                    except (PermissionError, OSError) as e:
+                        print(f"[SKIP] Cannot read {file_path}: {e}")
     return baseline
 
 
@@ -57,17 +61,19 @@ def compare_baseline():
 
 def start_monitoring():
     """Start monitoring directories for file integrity using inotify."""
-    # Initialize inotify and set up watches for monitoring directories
     inotify = INotify()
-    # Define watch flags (CREATE, DELETE, MODIFY, DELETE_SELF)
-    watch_flags = flags.CREATE | flags.DELETE | flags.MODIFY | flags.DELETE_SELF
+    watch_flags = (
+        flags.CREATE | flags.DELETE | flags.MODIFY | flags.DELETE_SELF | flags.ATTRIB
+    )
     wd_to_path = {}
-    # Initialize inotify watches for each directory
-    for dir in ACTIVITY_DIRS:
-        # Walk through the directory and add watches for each subdirectory
-        for root, dirs, files in os.walk(dir, topdown=True):
-            wd = inotify.add_watch(root, watch_flags)
-            wd_to_path[wd] = root
+    for entry in ACTIVITY_DIRS:
+        if os.path.isfile(entry):
+            wd = inotify.add_watch(entry, watch_flags)
+            wd_to_path[wd] = entry
+        elif os.path.isdir(entry):
+            for root, dirs, files in os.walk(entry, topdown=True):
+                wd = inotify.add_watch(root, watch_flags)
+                wd_to_path[wd] = root
     return inotify, wd_to_path, watch_flags
 
 
@@ -76,8 +82,8 @@ def handle_events(notifier, inotify, wd_to_path, watch_flags, baseline):
     # Read events from inotify and process them
     events = inotify.read(timeout=5000)
     for event in events:
-        flag_names = [f.name for f in flags.from_mask(event.mask)]
         path = os.path.join(wd_to_path[event.wd], event.name)
+        flag_names = [f.name for f in flags.from_mask(event.mask)]
         event_type = ", ".join(flag_names)
 
         # Set default severity and path
@@ -90,12 +96,14 @@ def handle_events(notifier, inotify, wd_to_path, watch_flags, baseline):
             severity = "CRITICAL"
 
         # If a baseline hash exists for the path, check if it has been modified
-        if "MODIFY" in flag_names and path in baseline:
+        if ("MODIFY" in flag_names or "ATTRIB" in flag_names) and path in baseline:
+            severity = "CRITICAL"
             try:
                 with open(path, "rb") as f:
                     current_hash = hashlib.sha256(f.read()).hexdigest()
                 if current_hash != baseline[path]:
-                    severity = "CRITICAL"
+                    ...
+                    # context["contents_changed"] = True
             except (PermissionError, OSError):
                 pass
 

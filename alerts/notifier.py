@@ -33,5 +33,6 @@ class Notifier:
                 "--urgency=critical",
             ],
             env=env,
-            check=False,  # silent fail
+            user=int(uid),  # drop to the original user
+            check=False,
         )
